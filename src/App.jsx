@@ -1227,7 +1227,7 @@ const HomePage = ({ setActivePage }) => {
 
             {/* Massive Name */}
             <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-extrabold tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white via-slate-200 to-slate-500 drop-shadow-2xl">
-              ABHISHEK WANI 2222
+              ABHISHEK WANI
             </h1>
 
             {/* Typewriter Subtitle */}
