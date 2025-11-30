@@ -4,20 +4,19 @@ import {
   Cpu, Smartphone, Send, Download, BookOpen, Briefcase, PenTool, Database, 
   ChevronDown, Phone, Loader, ExternalLink, Award,
   Terminal, Monitor, Server, Wifi, Layout, ShoppingCart, MapPin, FileText,
-  Sun, Moon, CheckCircle
+  Sun, Moon, CheckCircle, Instagram // Added Instagram
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue, useSpring } from 'framer-motion';
 
 /**
  * ULTRA-MODERN REACT PORTFOLIO - ABHISHEK WANI
  * --------------------------------------------
  * Features:
- * - Custom "Birds" Flocking Background (Vanta.js style)
+ * - Geometric Parallax Background (Stable & Fast)
  * - Deep Violet/Dark Cyber Aesthetic + Clean Light Mode
- * - Sticky Theme Toggler
+ * - Sticky Theme Toggler (Bottom Right)
  * - Extended Landing Page Sections
  * - Working Contact Form (Web3Forms)
- * - Cleaned & Optimized Codebase
  */
 
 // --- 1. UTILITY & CONFIGURATION ---
@@ -26,6 +25,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 const THEME_DARK = {
   mode: 'dark',
   bg: "bg-[#0a0a0f]",
+  bgGradient: "bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e]",
   textMain: "text-slate-100",
   textMuted: "text-slate-400",
   accent: "text-violet-400",
@@ -40,15 +40,12 @@ const THEME_DARK = {
   iconBg: "bg-violet-500/20 text-violet-400",
   timelineBorder: "border-slate-800",
   skillCardBg: "bg-slate-900/50 hover:bg-slate-800",
-  // Birds Config
-  birdsBg: "#0a0a0f",
-  birdsColor: "#7c3aed", // Violet
-  birdsAlpha: 0.6
 };
 
 const THEME_LIGHT = {
   mode: 'light',
   bg: "bg-slate-50",
+  bgGradient: "bg-gradient-to-br from-indigo-50 via-white to-purple-50",
   textMain: "text-slate-900",
   textMuted: "text-slate-600",
   accent: "text-violet-600",
@@ -63,177 +60,60 @@ const THEME_LIGHT = {
   iconBg: "bg-violet-100 text-violet-600",
   timelineBorder: "border-slate-300",
   skillCardBg: "bg-white hover:bg-slate-50 border border-slate-100",
-  // Birds Config
-  birdsBg: "#f8fafc",
-  birdsColor: "#4f46e5", // Indigo
-  birdsAlpha: 0.8
 };
 
-// --- 2. CUSTOM BACKGROUNDS ---
+// --- 2. CUSTOM HOOKS ---
 
-// Vanta-Style Birds Effect (Boids Algorithm)
-const BirdsBackground = ({ theme }) => {
-  const canvasRef = useRef(null);
-
+const useMousePosition = () => {
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   useEffect(() => {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    let width, height;
-    let boids = [];
-    let animationFrameId;
-    
-    // Configuration
-    const numBoids = 100;
-    const visualRange = 75;
-    const speedLimit = 4;
-    const minSpeed = 2;
-    const turnFactor = 0.2;
-    const margin = 50; 
-
-    const resize = () => {
-      if (!canvas) return;
-      width = canvas.width = window.innerWidth;
-      height = canvas.height = window.innerHeight;
-    };
-
-    const distance = (b1, b2) => Math.sqrt((b1.x - b2.x) ** 2 + (b1.y - b2.y) ** 2);
-
-    class Boid {
-      constructor() {
-        this.x = Math.random() * width;
-        this.y = Math.random() * height;
-        this.vx = Math.random() * 10 - 5;
-        this.vy = Math.random() * 10 - 5;
-        this.size = Math.random() * 2 + 2; 
-      }
-
-      cohesion(boids) {
-        let centerX = 0, centerY = 0, numNeighbors = 0;
-        for (let other of boids) {
-          if (distance(this, other) < visualRange) {
-            centerX += other.x;
-            centerY += other.y;
-            numNeighbors++;
-          }
-        }
-        if (numNeighbors > 0) {
-          centerX /= numNeighbors;
-          centerY /= numNeighbors;
-          this.vx += (centerX - this.x) * 0.0005;
-          this.vy += (centerY - this.y) * 0.0005;
-        }
-      }
-
-      separation(boids) {
-        let moveX = 0, moveY = 0;
-        for (let other of boids) {
-          if (other !== this && distance(this, other) < 20) {
-            moveX += this.x - other.x;
-            moveY += this.y - other.y;
-          }
-        }
-        this.vx += moveX * 0.05;
-        this.vy += moveY * 0.05;
-      }
-
-      alignment(boids) {
-        let avgVX = 0, avgVY = 0, numNeighbors = 0;
-        for (let other of boids) {
-          if (distance(this, other) < visualRange) {
-            avgVX += other.vx;
-            avgVY += other.vy;
-            numNeighbors++;
-          }
-        }
-        if (numNeighbors > 0) {
-          avgVX /= numNeighbors;
-          avgVY /= numNeighbors;
-          this.vx += (avgVX - this.vx) * 0.05;
-          this.vy += (avgVY - this.vy) * 0.05;
-        }
-      }
-
-      keepWithinBounds() {
-        if (this.x < margin) this.vx += turnFactor;
-        if (this.x > width - margin) this.vx -= turnFactor;
-        if (this.y < margin) this.vy += turnFactor;
-        if (this.y > height - margin) this.vy -= turnFactor;
-      }
-
-      limitSpeed() {
-        const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
-        if (speed > speedLimit) {
-          this.vx = (this.vx / speed) * speedLimit;
-          this.vy = (this.vy / speed) * speedLimit;
-        }
-        if (speed < minSpeed) {
-           this.vx = (this.vx / speed) * minSpeed;
-           this.vy = (this.vy / speed) * minSpeed;
-        }
-      }
-
-      update() {
-        this.cohesion(boids);
-        this.separation(boids);
-        this.alignment(boids);
-        this.keepWithinBounds();
-        this.limitSpeed();
-
-        this.x += this.vx;
-        this.y += this.vy;
-      }
-
-      draw() {
-        const angle = Math.atan2(this.vy, this.vx);
-        ctx.save();
-        ctx.translate(this.x, this.y);
-        ctx.rotate(angle);
-        ctx.beginPath();
-        ctx.moveTo(this.size * 2, 0);
-        ctx.lineTo(-this.size, this.size);
-        ctx.lineTo(-this.size, -this.size);
-        ctx.lineTo(this.size * 2, 0);
-        ctx.fillStyle = theme.birdsColor;
-        ctx.globalAlpha = theme.birdsAlpha;
-        ctx.fill();
-        ctx.restore();
-      }
-    }
-
-    const init = () => {
-      boids = [];
-      for (let i = 0; i < numBoids; i++) {
-        boids.push(new Boid());
-      }
-    };
-
-    const animate = () => {
-      if (!ctx) return;
-      ctx.fillStyle = theme.birdsBg;
-      ctx.fillRect(0, 0, width, height); 
-      
-      boids.forEach(boid => {
-        boid.update();
-        boid.draw();
-      });
-      animationFrameId = requestAnimationFrame(animate);
-    };
-
-    window.addEventListener('resize', resize);
-    resize();
-    init();
-    animate();
-
-    return () => {
-      window.removeEventListener('resize', resize);
-      cancelAnimationFrame(animationFrameId);
-    };
-  }, [theme]); 
-
-  return <canvas ref={canvasRef} className="fixed inset-0 z-[-1]" />;
+    const handleMove = (e) => setMousePos({ x: e.clientX, y: e.clientY });
+    window.addEventListener('mousemove', handleMove);
+    return () => window.removeEventListener('mousemove', handleMove);
+  }, []);
+  return mousePos;
 };
 
 // --- 3. SHARED COMPONENTS ---
+
+// Geometric Background Layer (Stable Replacement for Vanta)
+const BackgroundLayer = ({ theme, mousePos }) => {
+  const moveX = mousePos.x * 0.02;
+  const moveY = mousePos.y * 0.02;
+
+  const strokeColor = theme.mode === 'dark' ? "rgba(167, 139, 250, 0.1)" : "rgba(99, 102, 241, 0.1)";
+  const circle1Fill = theme.mode === 'dark' ? "rgba(124, 58, 237, 0.05)" : "rgba(124, 58, 237, 0.1)";
+  const circle2Fill = theme.mode === 'dark' ? "rgba(59, 130, 246, 0.05)" : "rgba(59, 130, 246, 0.1)";
+
+  return (
+    <div className="fixed inset-0 overflow-hidden pointer-events-none z-[-1]">
+      <div className={`absolute inset-0 ${theme.bgGradient} opacity-100 transition-colors duration-500`} />
+      
+      {/* Parallax Grid & Shapes */}
+      <motion.div 
+        className="absolute inset-0 opacity-100"
+        animate={{ x: -moveX, y: -moveY }}
+        transition={{ type: 'tween', ease: 'linear', duration: 0 }}
+      >
+        <svg className="absolute w-full h-full" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+              <path d="M 40 0 L 0 0 0 40" fill="none" stroke={strokeColor} strokeWidth="1" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#grid)" />
+          
+          {/* Floating Orbs */}
+          <circle cx="10%" cy="20%" r="300" fill={circle1Fill} filter="blur(80px)" />
+          <circle cx="90%" cy="80%" r="400" fill={circle2Fill} filter="blur(100px)" />
+        </svg>
+      </motion.div>
+
+      {/* Noise Texture */}
+      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay" />
+    </div>
+  );
+};
 
 // Loading Screen
 const LoadingScreen = () => {
@@ -398,7 +278,7 @@ const HomePage = ({ setActivePage, theme }) => {
                   src="avatar.png" 
                   alt="Avatar" 
                   className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
-                  onError={(e) => { e.target.src = "https://img.freepik.com/premium-photo/3d-avatar-boy-character-digital-universe-metaverse-gamers_1132551-93975.jpg" }}
+                  onError={(e) => { e.target.src = "" }}
                 />
               </div>
               <div className={`absolute -bottom-2 -right-2 ${theme.mode === 'dark' ? 'bg-[#0a0a0f]' : 'bg-white'} border border-violet-500/50 p-3 rounded-full shadow-lg animate-bounce`}>
@@ -631,9 +511,9 @@ const SkillsPage = ({ theme }) => {
     ],
     "Soft Skills": [
       { name: "Problem Solving", level: 90, icon: <Cpu /> },
-      { name: "Leadership", level: 85, icon: <ArrowRight /> }, // Using ArrowRight as generic icon if Users is missing or wanted specific
+      { name: "Leadership", level: 85, icon: <ArrowRight /> }, 
       { name: "Teaching", level: 95, icon: <BookOpen /> },
-      { name: "Agile/Scrum", level: 80, icon: <CheckCircle /> }, // Using CheckCircle
+      { name: "Agile/Scrum", level: 80, icon: <CheckCircle /> }, 
     ]
   };
 
@@ -813,14 +693,14 @@ const ProjectsPage = ({ theme }) => {
 };
 
 const ContactPage = ({ theme }) => {
+  // Use state for Inputs to keep UI in sync, but submit logic will use FormData directly
   const [formData, setFormData] = useState({ name: '', email: '', message: '' });
   const [loading, setLoading] = useState(false);
-  const [formStatus, setFormStatus] = useState(null);
+  const [formStatus, setFormStatus] = useState(null); // 'sending', 'success', 'error'
 
   const onSubmit = async (event) => {
     event.preventDefault();
     setFormStatus('sending');
-    setLoading(true);
     
     // Create new FormData object from the event target (the form)
     const data = new FormData(event.target);
@@ -837,16 +717,14 @@ const ContactPage = ({ theme }) => {
       if (resData.success) {
         setFormStatus('success');
         event.target.reset();
-        setFormData({ name: '', email: '', message: '' });
-        setTimeout(() => setFormStatus(null), 5000);
+        setFormData({ name: '', email: '', message: '' }); // Clear React state
+        setTimeout(() => setFormStatus(null), 5000); // Reset status after 5s
       } else {
         setFormStatus('error');
       }
     } catch (error) {
       console.error("Form Error:", error);
       setFormStatus('error');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -908,10 +786,10 @@ const ContactPage = ({ theme }) => {
             />
             <button 
               type="submit" 
-              disabled={loading}
+              disabled={formStatus === 'sending'}
               className={`w-full py-4 ${theme.buttonPrimary} font-bold rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50`}
             >
-              {loading ? <Loader className="animate-spin" /> : <>Send Message <Send size={18} /></>}
+              {formStatus === 'sending' ? <Loader className="animate-spin" /> : <>Send Message <Send size={18} /></>}
             </button>
             {formStatus === 'success' && (
               <p className="text-green-400 text-center text-sm font-bold mt-2">Message sent successfully!</p>
@@ -939,6 +817,7 @@ const Footer = ({ theme }) => (
         <a href="https://linkedin.com/abhishekwani0904" target="_blank" rel="noreferrer" className={`${theme.textMuted} hover:text-violet-400 transition-colors transform hover:scale-110`}><Linkedin size={20} /></a>
         <a href="mailto:abhishekwani12344@gmail.com" className={`${theme.textMuted} hover:text-violet-400 transition-colors transform hover:scale-110`}><Mail size={20} /></a>
         <a href="#" className={`${theme.textMuted} hover:text-violet-400 transition-colors transform hover:scale-110`}><Github size={20} /></a>
+        <a href="https://instagram.com" target="_blank" rel="noreferrer" className={`${theme.textMuted} hover:text-violet-400 transition-colors transform hover:scale-110`}><Instagram size={20} /></a>
       </div>
 
       <div className="text-center md:text-right">
@@ -963,6 +842,7 @@ const App = () => {
   }, []);
 
   const theme = isDarkMode ? THEME_DARK : THEME_LIGHT;
+  const mousePos = useMousePosition();
 
   return (
     <div className={`min-h-screen ${theme.bg} ${theme.textMain} font-sans selection:bg-violet-500 selection:text-white overflow-hidden flex flex-col transition-colors duration-500`}>
@@ -972,13 +852,13 @@ const App = () => {
 
       {!isLoading && (
         <>
-          <BirdsBackground theme={theme} />
+          <BackgroundLayer theme={theme} mousePos={mousePos} />
           <Header activePage={activePage} setActivePage={setActivePage} theme={theme} />
 
-          {/* Sticky Theme Toggler */}
+          {/* Sticky Theme Toggler (Right Side) */}
           <button
             onClick={() => setIsDarkMode(!isDarkMode)}
-            className="fixed bottom-6 left-6 z-50 p-3 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-violet-500 shadow-xl hover:scale-110 transition-transform active:scale-95"
+            className="fixed bottom-6 right-6 z-50 p-3 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-violet-500 shadow-xl hover:scale-110 transition-transform active:scale-95"
             title="Toggle Theme"
           >
             {isDarkMode ? <Sun size={24} fill="currentColor" /> : <Moon size={24} fill="currentColor" />}
